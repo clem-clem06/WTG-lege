@@ -5,35 +5,14 @@ namespace App\DataFixtures;
 use App\Entity\Baie;
 use App\Entity\Unite;
 use App\Entity\Offre;
-use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AppFixtures extends Fixture
 {
-    private UserPasswordHasherInterface $passwordHasher;
-
-    // Injecte le service pour hasher les mots de passe
-    public function __construct(UserPasswordHasherInterface $passwordHasher)
-    {
-        $this->passwordHasher = $passwordHasher;
-    }
-
     public function load(ObjectManager $manager): void
     {
-        // 1. CRÉATION DU COMPTE ADMINISTRATEUR
-        $admin = new User();
-        $admin->setEmail('admin@worktogether.com');
-        $admin->setRoles(['ROLE_ADMIN']);
-
-        // On hash le mot de passe "admin123"
-        $hashedPassword = $this->passwordHasher->hashPassword($admin, 'admin');
-        $admin->setPassword($hashedPassword);
-
-        $manager->persist($admin);
-
-        // 2. CRÉATION DES OFFRES COMMERCIALES (Prix en centimes)
+        // 1. CRÉATION DES OFFRES COMMERCIALES (Prix en centimes)
         $offresData = [
             // Base: 100€/mois | Annuel: (100 * 12) - 10% = 1080€
             ['nom' => 'Base', 'unites' => 1, 'prixMensuel' => 10000, 'prixAnnuel' => 108000],
@@ -57,7 +36,7 @@ class AppFixtures extends Fixture
             $manager->persist($offre);
         }
 
-        // 3. CRÉATION DES BAIES ET DES UNITÉS
+        // 2. CRÉATION DES BAIES ET DES UNITÉS
         for ($b = 1; $b <= 30; $b++) {
             $baie = new Baie();
             $referenceBaie = 'B' . str_pad((string)$b, 3, '0', STR_PAD_LEFT);
