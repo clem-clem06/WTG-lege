@@ -15,6 +15,41 @@
     </div>
 
     <div class="container mb-5">
+
+        {# NOUVELLE SECTION : EXPLICATIONS PÉDAGOGIQUES #}
+        <div class="row align-items-center mb-5 pb-5 border-bottom">
+            <div class="col-lg-7">
+                <h2 class="fw-bold mb-4">Comprendre nos infrastructures</h2>
+                <p class="text-muted fs-5 mb-4">
+                    Pour garantir la sécurité et la performance de vos équipements, nous utilisons des standards industriels précis. Mais qu'est-ce que cela signifie concrètement pour l'hébergement de vos serveurs ?
+                </p>
+
+                <div class="mb-4">
+                    <h4 class="text-primary fw-bold">🗄️ Qu'est-ce qu'une Baie ?</h4>
+                    <p class="text-muted">
+                        Une baie (souvent appelée <em>rack</em>) est une grande armoire métallique sécurisée, climatisée et alimentée électriquement de manière redondante. Elle sert à empiler et organiser vos serveurs, routeurs et équipements de stockage. WorkTogether possède <strong>{{ totalBaies }} baies de dernière génération</strong> dans son datacenter.
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="text-primary fw-bold">📏 Qu'est-ce qu'une Unité (U) ?</h4>
+                    <p class="text-muted">
+                        L'Unité (notée "U") est la mesure standard de hauteur dans un datacenter. 1U équivaut à 1,75 pouce (environ 4,45 cm). Nos baies mesurent <strong>42U de hauteur</strong>. Cela vous permet de louer l'espace exact dont vous avez besoin : de 1U pour un petit serveur web, jusqu'à 42U (la baie complète) pour une grande infrastructure.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-lg-5 text-center mt-4 mt-lg-0">
+                <div class="bg-light p-5 rounded-4 border shadow-sm">
+                    <h3 class="fw-bold text-dark mb-3">Une flexibilité totale</h3>
+                    <p class="text-muted mb-4">
+                        Que vous soyez une Start-up ayant besoin d'un seul espace ou une PME nécessitant la moitié d'une armoire, nos formules s'adaptent à la taille de votre matériel physique.
+                    </p>
+                    <a href="#offres" class="btn btn-outline-primary w-100">Découvrir nos formules</a>
+                </div>
+            </div>
+        </div>
+
         {# SECTION STATISTIQUES #}
         <div class="row text-center mb-5 g-4">
             <div class="col-md-4">
@@ -30,7 +65,7 @@
                 <div class="card bg-light border-0 shadow-sm h-100 py-3">
                     <div class="card-body">
                         <h5 class="text-muted">Capacité Totale</h5>
-                        <h2 class="display-5 fw-bold text-dark">{{ totalUnites }} U</h2>
+                        <h2 class="display-5 fw-bold text-dark">{{ totalUnites }} Unité</h2>
                         <p class="mb-0">D'espace d'hébergement</p>
                     </div>
                 </div>
@@ -39,14 +74,14 @@
                 <div class="card bg-primary text-white border-0 shadow-sm h-100 py-3">
                     <div class="card-body">
                         <h5 class="text-white-50">Disponibilité</h5>
-                        <h2 class="display-5 fw-bold">{{ unitesDispo }} U</h2>
+                        <h2 class="display-5 fw-bold">{{ unitesDispo }} Unité</h2>
                         <p class="mb-0">Restantes à la location</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        {# SECTION OFFRES (Celle qu'on a fait avant) #}
+        {# SECTION OFFRES #}
         <div id="offres" class="text-center mb-5 pt-4">
             <h2 class="fw-bold">Nos offres de location</h2>
             <p class="text-muted">Choisissez la dimension qui correspond à votre projet.</p>
