@@ -1,0 +1,119 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Inscription - WorkTogether{% endblock %}
+
+{% block body %}
+    <div class="container mt-5 mb-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+
+                <div class="card shadow-sm p-4 border-0 bg-light">
+                    <h1 class="h3 mb-4 fw-bold text-center">Inscription</h1>
+
+                    {% if form_errors(registrationForm) %}
+                        <div class="alert alert-danger">
+                            {{ form_errors(registrationForm) }}
+                        </div>
+                    {% endif %}
+
+                    {{ form_start(registrationForm) }}
+
+                    <div class="mb-3">
+                        {{ form_row(registrationForm.email, {
+                            'label': 'Adresse Email',
+                            'attr': {'autofocus': true}
+                        }) }}
+                    </div>
+
+                    <div class="mb-3">
+                        {# Le PREMIER champ de mot de passe #}
+                        {{ form_row(registrationForm.plainPassword.first) }}
+                        <div id="password-strength" class="form-text small mt-1"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        {# Le DEUXIÈME champ de mot de passe (confirmation) #}
+                        {{ form_row(registrationForm.plainPassword.second) }}
+                        <div id="password-match" class="form-text small mt-1"></div>
+                    </div>
+
+                    <div class="mb-3 form-check mt-4">
+                        {{ form_row(registrationForm.agreeTerms) }}
+                    </div>
+
+                    <button type="submit" id="btn-submit" class="btn btn-primary w-100 mt-3 py-2" disabled>
+                        Créer mon compte
+                    </button>
+
+                    {{ form_end(registrationForm) }}
+
+                    <div class="text-center mt-4">
+                        <a href="{{ path('app_login') }}" class="text-decoration-none text-muted small">
+                            Déjà un compte ? Connectez-vous
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }} {# On garde les scripts de base (Bootstrap) #}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // On récupère les éléments HTML
+            const passInput = document.querySelector('.password-field');
+            const confirmInput = document.querySelector('.password-confirm-field');
+            const strengthText = document.getElementById('password-strength');
+            const matchText = document.getElementById('password-match');
+            const btnSubmit = document.getElementById('btn-submit');
+
+            // La même Regex que dans PHP
+            const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+            let isPasswordStrong = false;
+            let doPasswordsMatch = false;
+
+            // Fonction pour vérifier si on peut activer le bouton de validation
+            function checkFormValidity() {
+                if (isPasswordStrong && doPasswordsMatch) {
+                    btnSubmit.removeAttribute('disabled');
+                } else {
+                    btnSubmit.setAttribute('disabled', 'true');
+                }
+            }
+
+            // Écouteur sur la frappe du 1er mot de passe
+            passInput.addEventListener('input', function() {
+                if (regex.test(passInput.value)) {
+                    strengthText.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle"></i> Mot de passe fort !</span>';
+                    isPasswordStrong = true;
+                } else {
+                    strengthText.innerHTML = '<span class="text-danger">Doit contenir au moins 8 caractères, 1 majuscule, 1 minuscule, 1 chiffre et 1 caractère spécial.</span>';
+                    isPasswordStrong = false;
+                }
+                checkMatch();
+            });
+
+            // Écouteur sur la frappe du 2ème mot de passe
+            confirmInput.addEventListener('input', checkMatch);
+
+            function checkMatch() {
+                if (confirmInput.value === '') {
+                    matchText.innerHTML = '';
+                    doPasswordsMatch = false;
+                } else if (passInput.value === confirmInput.value) {
+                    matchText.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle"></i> Les mots de passe correspondent.</span>';
+                    doPasswordsMatch = true;
+                } else {
+                    matchText.innerHTML = '<span class="text-danger">Les mots de passe ne correspondent pas.</span>';
+                    doPasswordsMatch = false;
+                }
+                checkFormValidity();
+            }
+        });
+    </script>
+{% endblock %}
