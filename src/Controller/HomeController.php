@@ -21,8 +21,8 @@ class HomeController extends AbstractController
         $offres = $offreRepository->findAll();
 
         // 2. Calculer les statistiques
-        $totalBaies = $baieRepository->count([]);
-        $totalUnites = $uniteRepository->count([]);
+        $totalBaies = $baieRepository->count();
+        $totalUnites = $uniteRepository->count();
 
         // On considère qu'une unité est disponible si elle n'a pas encore de nom défini par un client
         $unitesDispo = $uniteRepository->count(['nom' => null]);
