@@ -11,20 +11,20 @@
         <div class="collapse navbar-collapse" id="navbarMain">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ path('app_home') }}">Accueil</a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link" href="{{ path('app_home') }}#offres">Nos offres</a>
                 </li>
             </ul>
 
-            {# Les boutons de connexion à droite #}
+            {# Les boutons à droite #}
             <div class="d-flex align-items-center">
+
                 {% if app.user %}
                     {# Si l'utilisateur EST connecté #}
                     <span class="text-light me-3">
                         Bonjour, <strong>{{ app.user.userIdentifier }}</strong>
                     </span>
+
+                    <a href="{{ path('app_cart') }}" class="btn btn-sm btn-outline-warning me-2">Mon Panier</a>
 
                     {# On pourra remplacer le # par la route de l'espace client plus tard #}
                     <a href="#" class="btn btn-sm btn-outline-info me-2">Mon Espace</a>
@@ -32,8 +32,9 @@
                     <a href="{{ path('app_logout') }}" class="btn btn-sm btn-outline-danger">Déconnexion</a>
                 {% else %}
                     {# Si l'utilisateur N'EST PAS connecté #}
+                    <a href="{{ path('app_cart') }}" class="btn btn-sm btn-outline-warning me-2">Mon Panier</a>
                     <a href="{{ path('app_login') }}" class="btn btn-sm btn-outline-light me-2">Connexion</a>
-                    <a href="{{ path('app_register') }}" class="btn btn-sm btn-primary">Inscription</a>
+                    <a href="{{ path('app_register') }}" class="btn btn-sm btn-outline-primary">Inscription</a>
                 {% endif %}
             </div>
         </div>
