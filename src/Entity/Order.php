@@ -22,18 +22,10 @@ class Order
     private ?User $user = null;
 
     #[ORM\OneToMany(targetEntity: OrderItem::class, mappedBy: 'orderRef', orphanRemoval: true)]
-    private Collection $orderItems {
-        get {
-            return $this->orderItems;
-        }
-    }
+    private Collection $orderItems;
 
     #[ORM\OneToMany(targetEntity: Payment::class, mappedBy: 'orderRef')]
-    private Collection $payments {
-        get {
-            return $this->payments;
-        }
-    }
+    private Collection $payments;
 
     #[ORM\Column]
     private ?int $total = null;
@@ -132,5 +124,25 @@ class Order
     {
         $this->createdAt = $createdAt;
         return $this;
+    }
+
+    public function getOrderItems(): Collection
+    {
+        return $this->orderItems;
+    }
+
+    public function setOrderItems(Collection $orderItems): void
+    {
+        $this->orderItems = $orderItems;
+    }
+
+    public function getPayments(): Collection
+    {
+        return $this->payments;
+    }
+
+    public function setPayments(Collection $payments): void
+    {
+        $this->payments = $payments;
     }
 }

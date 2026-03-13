@@ -66,11 +66,9 @@ class Baie
 
     public function removeUnite(Unite $unite): static
     {
-        if ($this->unites->removeElement($unite)) {
+        if ($this->unites->removeElement($unite) && $unite->getBaie() === $this) {
             // set the owning side to null (unless already changed)
-            if ($unite->getBaie() === $this) {
-                $unite->setBaie(null);
-            }
+            $unite->setBaie(null);
         }
 
         return $this;

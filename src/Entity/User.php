@@ -37,18 +37,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\OneToMany(targetEntity: Cart::class, mappedBy: 'user')]
-    private Collection $carts {
-        get {
-            return $this->carts;
-        }
-    }
+    private Collection $carts;
 
     #[ORM\OneToMany(targetEntity: Order::class, mappedBy: 'user')]
-    private Collection $orders {
-        get {
-            return $this->orders;
-        }
-    }
+    private Collection $orders;
+
+    /**
+     * @var Collection<int, Card>
+     */
+    #[ORM\OneToMany(targetEntity: Card::class, mappedBy: 'user', orphanRemoval: true)]
+    private Collection $cards;
 
     public function getEmail(): ?string
     {
@@ -124,6 +122,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->carts = new ArrayCollection();
         $this->orders = new ArrayCollection();
+        $this->cards = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -134,6 +133,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setId(?int $id): void
     {
         $this->id = $id;
+    }
+
+    public function getCarts(): Collection
+    {
+        return $this->carts;
     }
 
     public function addCart(Cart $cart): static
@@ -156,6 +160,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getOrders(): Collection
+    {
+        return $this->orders;
+    }
+
     public function addOrder(Order $order): static
     {
         if (!$this->orders->contains($order)) {
@@ -171,6 +180,34 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         if ($this->orders->removeElement($order) && $order->getUser() === $this) {
             // set the owning side to null (unless already changed)
             $order->setUser(null);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Card>
+     */
+    public function getCards(): Collection
+    {
+        return $this->cards;
+    }
+
+    public function addCard(Card $card): static
+    {
+        if (!$this->cards->contains($card)) {
+            $this->cards->add($card);
+            $card->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCard(Card $card): static
+    {
+        if ($this->cards->removeElement($card) && $card->getUser() === $this) {
+            // set the owning side to null (unless already changed)
+            $card->setUser(null);
         }
 
         return $this;

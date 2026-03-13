@@ -21,11 +21,7 @@ class Cart
     private ?User $user = null;
 
     #[ORM\OneToMany(targetEntity: CartItem::class, mappedBy: 'cart', orphanRemoval: true)]
-    public Collection $cartItems {
-        get {
-            return $this->cartItems;
-        }
-    }
+    public Collection $cartItems;
 
     #[ORM\Column]
     private ?DateTimeImmutable $createdAt = null;
@@ -71,6 +67,11 @@ class Cart
             $cartItem->setCart(null);
         }
         return $this;
+    }
+
+    public function getCartItems(): Collection
+    {
+        return $this->cartItems;
     }
 
     public function getCreatedAt(): ?DateTimeImmutable
