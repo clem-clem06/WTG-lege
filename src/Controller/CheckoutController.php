@@ -45,6 +45,9 @@ class CheckoutController extends AbstractController
 
         $user = $this->getUser();
 
+        $last4 = null;
+        $fakeBankToken = null;
+
         // 1. GESTION DE LA CARTE BANCAIRE (Simulation PCI-DSS)
         $cardNumber = $request->request->get('cardNumber');
         $expDate = $request->request->get('expDate'); // Format MM/YY
@@ -101,7 +104,7 @@ class CheckoutController extends AbstractController
         $payment->setStatus('completed'); // Simulé
 
         // On peut stocker le token dans le gatewayResponse pour garder une trace
-        $tokenTrace = isset($fakeBankToken) ? ' avec la carte finissant par ' . $last4 : '';
+        $tokenTrace = $fakeBankToken ? ' avec la carte finissant par ' . $last4 : '';
         $payment->setGatewayResponse('Paiement simulé réussi' . $tokenTrace);
 
         $em->persist($order);
