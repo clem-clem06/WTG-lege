@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
-class CartController extends AbstractController
+final class CartController extends AbstractController
 {
     #[Route('/cart', name: 'app_cart')]
     public function index(CartRepository $cartRepository): Response

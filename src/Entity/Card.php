@@ -24,7 +24,7 @@ class Card
     private ?int $expMonth = null;
 
     #[ORM\Column]
-    private ?int $exYear = null;
+    private ?int $expYear = null;
 
     #[ORM\Column(length: 255)]
     private ?string $token = null;
@@ -70,14 +70,14 @@ class Card
         return $this;
     }
 
-    public function getExYear(): ?int
+    public function getExpYear(): ?int
     {
-        return $this->exYear;
+        return $this->expYear;
     }
 
-    public function setExYear(int $exYear): static
+    public function setExpYear(int $exYear): static
     {
-        $this->exYear = $exYear;
+        $this->expYear = $exYear;
 
         return $this;
     }
@@ -92,10 +92,5 @@ class Card
         $this->token = $token;
 
         return $this;
-    }
-
-    public function setExpYear(int $expYear): void
-    {
-
     }
 }
