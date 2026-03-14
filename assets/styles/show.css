@@ -1,0 +1,19 @@
+#offre-detail{
+    .option-card {
+        opacity: 0.6;
+        cursor: pointer;
+    }
+    .btn-check:checked + .option-card {
+        opacity: 1;
+        transform: scale(1.02);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
+    .transition-all {
+        transition: all 0.2s ease-in-out;
+    }
+}

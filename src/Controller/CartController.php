@@ -7,6 +7,7 @@ use App\Entity\CartItem;
 use App\Entity\Offre;
 use App\Repository\CartRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -27,13 +28,10 @@ final class CartController extends AbstractController
         ]);
     }
 
-    // J'ai enlevé methods: ['POST'] pour qu'on puisse juste utiliser un simple lien <a> depuis les offres
-    #[Route('/cart/add/{id}', name: 'app_cart_add')]
-    public function add(Offre $offre, CartRepository $cartRepository, EntityManagerInterface $em): Response
+    #[Route('/cart/add/{id}', name: 'app_cart_add', methods: ['POST'])]
+    public function add(Offre $offre, Request $request, CartRepository $cartRepository, EntityManagerInterface $em): Response
     {
         $user = $this->getUser();
-
-        // 1. Récupérer ou créer le panier
         $cart = $cartRepository->findOneBy(['user' => $user]);
         if (!$cart) {
             $cart = new Cart();
@@ -41,32 +39,30 @@ final class CartController extends AbstractController
             $em->persist($cart);
         }
 
-        // 2. Vérifier si l'offre est DÉJÀ dans le panier
-        $existingItem = null;
-        foreach ($cart->getCartItems() as $item) {
-            if ($item->getOffre() === $offre) {
-                $existingItem = $item;
-                break;
-            }
-        }
+        // 1. Récupération de la durée depuis le formulaire (par défaut 1 mois si on n'a rien)
+        $dureeChoisie = (int) $request->request->get('duree', 1);
 
-        if ($existingItem) {
-            // Si elle y est, on ajoute +1 à la quantité
-            $existingItem->setQuantity($existingItem->getQuantity() + 1);
+        // 2. Calcul du prix total pour cette ligne
+        if ($dureeChoisie === 12) {
+            // Promo : 12 mois pour le prix de 10
+            $prixCalcule = $offre->getPrixMensuel() * 10;
         } else {
-            // Sinon, on crée une nouvelle ligne dans le panier
-            $cartItem = new CartItem();
-            $cartItem->setOffre($offre);
-            $cartItem->setQuantity(1);
-            $cartItem->setPrice($offre->getPrixMensuel()); // Attention : C'est en centimes !
-            $cart->addCartItem($cartItem);
-
-            $em->persist($cartItem);
+            // Sinon (1 mois), c'est le prix normal x1
+            $prixCalcule = $offre->getPrixMensuel() * 1;
         }
 
-        $em->flush();
-        $this->addFlash('success', 'L\'offre a été ajoutée à votre panier !');
+        // 3. Ajout au panier
+        $cartItem = new CartItem();
+        $cartItem->setOffre($offre);
+        $cartItem->setQuantity(1);
+        $cartItem->setDureeMois($dureeChoisie); // On sauvegarde la durée
+        $cartItem->setPrice($prixCalcule); // Le prix total de la ligne
 
+        $cart->addCartItem($cartItem);
+        $em->persist($cartItem);
+        $em->flush();
+
+        $this->addFlash('success', 'L\'offre a bien été ajoutée pour ' . $dureeChoisie . ' mois !');
         return $this->redirectToRoute('app_cart');
     }
 

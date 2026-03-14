@@ -1,18 +1,73 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ offre.nom }}{% endblock %}
+{% block title %}{{ offre.nom }} - WorkTogether{% endblock %}
 
 {% block body %}
-<div class="container">
-    <h1>{{ offre.nom }}</h1>
-    <p>Unités: {{ offre.nombreUnites }}</p>
-    <p>Prix mensuel: {{ offre.prixMensuel / 100 }}€</p>
-    <p>Prix annuel: {{ offre.prixAnnuel / 100 }}€</p>
-    <form action="{{ path('app_cart_add', {id: offre.id}) }}" method="post">
-        <label for="quantity">Quantité:</label>
-        <input type="number" id="quantity" name="quantity" value="1" min="1">
-        <button type="submit" class="btn btn-success">Ajouter au panier</button>
-    </form>
-    <a href="{{ path('app_cart') }}" class="btn btn-secondary">Voir le panier</a>
-</div>
+    <div class="container py-5 mb-5" id="offre-detail">
+        <div class="row align-items-center mb-5">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold text-primary mb-3">{{ offre.nom }}</h1>
+                <p class="lead text-muted">Location de {{ offre.nombreUnites }} unité(s) dans nos baies hautement sécurisées.</p>
+                <ul class="list-unstyled mt-4 fs-5">
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Connexion Fibre très haut débit</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Alimentation redondante (Onduleurs + Groupes)</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Accès sécurisé 24/7</li>
+                </ul>
+            </div>
+            <div class="col-lg-5 offset-lg-1">
+                <div class="card shadow-lg border-0 rounded-4">
+                    <div class="card-body p-5">
+                        <h3 class="fw-bold mb-4 text-center">Choisissez votre abonnement</h3>
+
+                        {# Le formulaire qui pointe vers l'ajout au panier #}
+                        <form action="{{ path('app_cart_add', {'id': offre.id}) }}" method="POST">
+
+                            {# Option 1 : Mensuel #}
+                            <label class="w-100 mb-3 cursor-pointer">
+                                <input type="radio" name="duree" value="1" class="btn-check" checked autocomplete="off">
+                                <div class="card border-primary border-2 h-100 option-card transition-all">
+                                    <div class="card-body d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-0 fw-bold">Sans engagement</h5>
+                                            <small class="text-muted">Paiement mensuel</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="fs-4 fw-bold text-primary">{{ (offre.prixMensuel / 100)|number_format(2, ',', ' ') }} €</span><br>
+                                            <small class="text-muted">/ mois</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+
+                            {# Option 2 : Annuel (Souvent on fait x10 au lieu de x12 pour offrir 2 mois) #}
+                            <label class="w-100 mb-4 cursor-pointer">
+                                <input type="radio" name="duree" value="12" class="btn-check" autocomplete="off">
+                                <div class="card border-success border-2 h-100 option-card transition-all">
+                                    <div class="card-header bg-success text-white text-center fw-bold py-1">
+                                        ÉCONOMISEZ 16% (2 mois offerts)
+                                    </div>
+                                    <div class="card-body d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-0 fw-bold">Engagement 1 an</h5>
+                                            <small class="text-muted">Paiement annuel</small>
+                                        </div>
+                                        <div class="text-end">
+                                            {# Exemple de calcul : 10 mois payés au lieu de 12 #}
+                                            <span class="fs-4 fw-bold text-success">{{ ((offre.prixMensuel * 10) / 100)|number_format(2, ',', ' ') }} €</span><br>
+                                            <small class="text-muted">/ an</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <button type="submit" class="btn btn-primary btn-lg w-100 py-3 fw-bold fs-5">
+                                <i class="bi bi-cart-plus me-2"></i> Ajouter au panier
+                            </button>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}

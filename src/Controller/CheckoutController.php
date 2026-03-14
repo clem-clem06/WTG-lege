@@ -8,6 +8,7 @@ use App\Entity\OrderItem;
 use App\Entity\Payment;
 use App\Repository\CartRepository;
 use App\Repository\UniteRepository;
+use DateMalformedStringException;
 use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Random\RandomException;
@@ -40,6 +41,7 @@ Final class CheckoutController extends AbstractController
 
     /**
      * @throws RandomException
+     * @throws DateMalformedStringException
      */
     #[Route('/checkout/process', name: 'app_checkout_process', methods: ['POST'])]
     public function process(Request $request, CartRepository $cartRepository, UniteRepository $uniteRepository, EntityManagerInterface $em): Response
@@ -112,6 +114,7 @@ Final class CheckoutController extends AbstractController
             $orderItem->setOffre($item->getOffre());
             $orderItem->setQuantity($item->getQuantity());
             $orderItem->setPrice($item->getPrice());
+            $orderItem->setDureeMois($item->getDureeMois());
             $order->addOrderItem($orderItem);
             $em->persist($orderItem);
         }
@@ -128,31 +131,33 @@ Final class CheckoutController extends AbstractController
         $em->persist($payment);
 
         // ==========================================
-        // 2. NOUVEAU : ATTRIBUTION DES UNITÉS !
+        // 2. ATTRIBUTION DES UNITÉS (Géré article par article)
         // ==========================================
-        $totalUnitesAchetees = 0;
         foreach ($cart->getCartItems() as $item) {
-            // On multiplie le nb d'unités de l'offre par la quantité choisie au panier
-            $totalUnitesAchetees += $item->getOffre()->getNombreUnites() * $item->getQuantity();
-        }
 
-        // On cherche des unités disponibles en BDD (locataire est NULL).
-        // Le 3ème paramètre de findBy sert à limiter le nombre de résultats (on prend juste ce qu'il faut)
-        $unitesDisponibles = $uniteRepository->findBy(['locataire' => null], null, $totalUnitesAchetees);
+            // 1. Combien d'unités sont nécessaires pour CET article précis ?
+            $unitesRequises = $item->getOffre()->getNombreUnites() * $item->getQuantity();
 
-        // Si quelqu'un a privatisé tout le datacenter entre temps et qu'il manque de la place :
-        if (count($unitesDisponibles) < $totalUnitesAchetees) {
-            $this->addFlash('danger', 'Désolé, il n\'y a plus assez d\'unités disponibles dans notre datacenter pour honorer votre commande.');
-            return $this->redirectToRoute('app_cart');
-        }
+            // 2. Quelle est la durée pour CET article ?
+            $dureeMois = $item->getDureeMois();
+            $dateFin = new \DateTime('+' . $dureeMois . ' months');
 
-        // On définit la date de fin d'abonnement (ex: abonnement mensuel = + 1 mois)
-        $dateFin = new DateTime('+1 month');
+            // 3. On cherche des unités disponibles juste pour cet article
+            $unitesDisponibles = $uniteRepository->findBy(['locataire' => null], null, $unitesRequises);
 
-        foreach ($unitesDisponibles as $unite) {
-            $unite->setLocataire($user);
-            $unite->setDateFinLocation($dateFin);
-            $em->persist($unite);
+            // Vérification anti-rupture de stock
+            if (count($unitesDisponibles) < $unitesRequises) {
+                $this->addFlash('danger', 'Désolé, il manque des unités disponibles pour honorer votre offre ' . $item->getOffre()->getNom());
+                return $this->redirectToRoute('app_cart');
+            }
+
+            // 4. On attribue ces unités au client
+            foreach ($unitesDisponibles as $unite) {
+                $unite->setLocataire($user);
+                $unite->setDateFinLocation($dateFin); // La date exacte pour cet article !
+                $em->persist($unite);
+            }
+            $em->flush();
         }
 
         // ==========================================

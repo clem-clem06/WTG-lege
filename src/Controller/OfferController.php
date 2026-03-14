@@ -10,14 +10,6 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class OfferController extends AbstractController
 {
-    #[Route('/offer', name: 'app_offer')]
-    public function index(OffreRepository $offreRepository): Response
-    {
-        return $this->render('offer/index.html.twig', [
-            'offres' => $offreRepository->findAll(),
-        ]);
-    }
-
     #[Route('/offer/{id}', name: 'app_offer_show')]
     public function show(Offre $offre): Response
     {
