@@ -49,9 +49,9 @@ final class CartController extends AbstractController
             return $this->redirectToRoute('app_offer_show', ['id' => $offre->getId()]);
         }
 
-        // On interdit les mois farfelus comme 23, mais on autorise 12, 24, 36...
-        if ($dureeChoisie < 1 || ($dureeChoisie > 9 && $dureeChoisie % 12 !== 0)) {
-            $this->addFlash('danger', 'Durée invalide. Au-delà de 9 mois, veuillez utiliser la facturation annuelle.');
+        // On interdit les durées au-delà de 5 ans (60 mois) et les mois farfelus (ex: 11 mois)
+        if ($dureeChoisie < 1 || $dureeChoisie > 60 || ($dureeChoisie > 9 && $dureeChoisie % 12 !== 0)) {
+            $this->addFlash('danger', 'Durée invalide. La limite est fixée à 5 ans.');
             return $this->redirectToRoute('app_offer_show', ['id' => $offre->getId()]);
         }
 
@@ -142,6 +142,9 @@ final class CartController extends AbstractController
             if (!$isAnnuel && $newDuree > 9) {
                 $this->addFlash('warning', 'Passez sur une offre annuelle.');
                 $newDuree = 9;
+            } elseif ($isAnnuel && $newDuree > 60) {
+                $this->addFlash('warning', 'La durée maximale d\'engagement est de 5 ans.');
+                $newDuree = 60;
             }
         } else {
             $newDuree = $currentDuree - $step;
