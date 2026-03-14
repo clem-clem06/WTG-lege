@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Repository\InterventionRepository;
 use App\Repository\UniteRepository;
+use DateTime;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
@@ -21,17 +22,26 @@ final class ApiController extends AbstractController
 
         $data = [];
         foreach ($unites as $unite) {
+
+            // On vérifie si l'unité a un locataire ET si la date de fin n'est pas dépassée
+            $maintenant = new DateTime();
+            $estLouee = false;
+
+            if ($unite->getLocataire() !== null && $unite->getDateFinLocation() > $maintenant) {
+                $estLouee = true;
+            }
+
             $data[] = [
                 'id' => $unite->getId(),
-                'nom' => $unite->getNom(),
-                // On vérifie si l'unité est louée
-                'disponible' => $unite->getNom() === null,
-                // On récupère l'ID de la baie à laquelle elle appartient
+                'numero' => $unite->getNumero(),
+                'etat' => $unite->getEtat(),
+                'disponible' => !$estLouee, // Si elle n'est pas louée, elle est dispo
+                'locataire_id' => $estLouee ? $unite->getLocataire()->getId() : null,
+                'date_fin_location' => $unite->getDateFinLocation()?->format('Y-m-d H:i:s'),
                 'baie_id' => $unite->getBaie()?->getId(),
             ];
         }
 
-        // $this->json() transforme automatiquement le tableau en vrai JSON !
         return $this->json($data, 200, [
             'Access-Control-Allow-Origin' => '*'
         ]);
