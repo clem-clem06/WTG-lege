@@ -12,10 +12,11 @@
                     <thead class="bg-light">
                     <tr>
                         <th>Offre</th>
-                        <th>Prix Unitaire (Mensuel)</th>
+                        <th>Durée</th>
                         <th>Quantité</th>
+                        <th>Prix de l'abonnement</th>
                         <th>Total</th>
-                        <th>Action</th>
+                        <th>Actions</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -28,7 +29,13 @@
 
                         <tr>
                             <td class="fw-bold text-primary">{{ item.offre.nom }}</td>
-                            <td>{{ (item.price / 100)|number_format(2, ',', ' ') }} €</td>
+                            <td>
+                                {% if item.dureeMois == 12 %}
+                                    <span class="badge bg-success">Annuel (1 an)</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Mensuel ({{ item.dureeMois }} mois)</span>
+                                {% endif %}
+                            </td>
                             <td>
                                 <div class="d-flex align-items-center">
                                     <a href="{{ path('app_cart_decrease', {'id': item.id}) }}" class="btn btn-sm btn-outline-secondary me-2 fw-bold">-</a>
@@ -36,6 +43,7 @@
                                     <a href="{{ path('app_cart_add', {'id': item.offre.id}) }}" class="btn btn-sm btn-outline-secondary ms-2 fw-bold">+</a>
                                 </div>
                             </td>
+                            <td>{{ (item.price / 100)|number_format(2, ',', ' ') }} €</td>
                             <td>{{ (sousTotal / 100)|number_format(2, ',', ' ') }} €</td>
                             <td>
                                 <a href="{{ path('app_cart_remove', {'id': item.id}) }}" class="btn btn-sm btn-outline-danger">

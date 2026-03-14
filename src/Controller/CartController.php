@@ -39,31 +39,51 @@ final class CartController extends AbstractController
             $em->persist($cart);
         }
 
-        // 1. Récupération de la durée depuis le formulaire (par défaut 1 mois si on n'a rien)
+        // On récupère les valeurs du formulaire
+        $quantiteChoisie = (int) $request->request->get('quantite', 1);
+
+        // Si tu as remplacé les boutons radio par un champ "nombre de mois", on le récupère ici :
         $dureeChoisie = (int) $request->request->get('duree', 1);
 
-        // 2. Calcul du prix total pour cette ligne
-        if ($dureeChoisie === 12) {
-            // Promo : 12 mois pour le prix de 10
-            $prixCalcule = $offre->getPrixMensuel() * 10;
-        } else {
-            // Sinon (1 mois), c'est le prix normal x1
-            $prixCalcule = $offre->getPrixMensuel() * 1;
+        // ==========================================
+        // POINT 1 : SÉCURITÉ
+        // ==========================================
+
+
+        $existingItem = null;
+        foreach ($cart->getCartItems() as $item) {
+            // LE SECRET : On vérifie l'offre ET la durée pour ne pas les mélanger !
+            if ($item->getOffre() === $offre && $item->getDureeMois() === $dureeChoisie) {
+                $existingItem = $item;
+                break;
+            }
         }
 
-        // 3. Ajout au panier
-        $cartItem = new CartItem();
-        $cartItem->setOffre($offre);
-        $cartItem->setQuantity(1);
-        $cartItem->setDureeMois($dureeChoisie); // On sauvegarde la durée
-        $cartItem->setPrice($prixCalcule); // Le prix total de la ligne
+        if ($existingItem) {
+            $existingItem->setQuantity($existingItem->getQuantity() + $quantiteChoisie);
+        } else {
+            // Si le client prend plusieurs années (ex: 12, 24, 36), on peut lui appliquer la promo "2 mois offerts par an"
+            if ($dureeChoisie >= 12 && $dureeChoisie % 12 === 0) {
+                $annees = $dureeChoisie / 12;
+                $prixCalcule = $offre->getPrixMensuel() * 10 * $annees; // 10 mois payés au lieu de 12 par an
+            } else {
+                $prixCalcule = $offre->getPrixMensuel() * $dureeChoisie; // Prix classique
+            }
 
-        $cart->addCartItem($cartItem);
-        $em->persist($cartItem);
+            $cartItem = new CartItem();
+            $cartItem->setOffre($offre);
+            $cartItem->setQuantity($quantiteChoisie);
+            $cartItem->setDureeMois($dureeChoisie);
+            $cartItem->setPrice($prixCalcule);
+
+            $cart->addCartItem($cartItem);
+            $em->persist($cartItem);
+        }
+
         $em->flush();
 
-        $this->addFlash('success', 'L\'offre a bien été ajoutée pour ' . $dureeChoisie . ' mois !');
-        return $this->redirectToRoute('app_cart');
+        $this->addFlash('success', 'Offre ajoutée à votre panier pour ' . $dureeChoisie . ' mois !');
+        return $this->redirectToRoute('app_offer_show', ['id' => $offre->getId()]);
     }
 
     #[Route('/cart/remove/{id}', name: 'app_cart_remove')]
