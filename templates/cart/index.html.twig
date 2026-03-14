@@ -8,47 +8,76 @@
 
         {% if cart and cart.cartItems|length > 0 %}
             <div class="table-responsive shadow-sm rounded">
-                <table class="table table-hover align-middle mb-0 bg-white">
+                <table class="table table-hover align-middle mb-0 bg-white text-center">
                     <thead class="bg-light">
                     <tr>
-                        <th>Offre</th>
-                        <th>Durée</th>
+                        <th class="text-start">Offre</th>
+                        <th>Durée (Abonnement)</th>
                         <th>Quantité</th>
                         <th>Prix de l'abonnement</th>
-                        <th>Total</th>
-                        <th>Actions</th>
+                        <th>Total de la ligne</th>
+                        <th>Action</th>
                     </tr>
                     </thead>
                     <tbody>
                     {% set totalPanier = 0 %}
 
                     {% for item in cart.cartItems %}
-                        {# Calcul du sous-total pour cette ligne #}
                         {% set sousTotal = item.price * item.quantity %}
                         {% set totalPanier = totalPanier + sousTotal %}
 
                         <tr>
-                            <td class="fw-bold text-primary">{{ item.offre.nom }}</td>
+                            <td class="fw-bold text-primary text-start">{{ item.offre.nom }}</td>
+
+                            {# COLONNE DURÉE (+ ET -) #}
                             <td>
-                                {% if item.dureeMois == 12 %}
-                                    <span class="badge bg-success">Annuel (1 an)</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Mensuel ({{ item.dureeMois }} mois)</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <a href="{{ path('app_cart_decrease', {'id': item.id}) }}" class="btn btn-sm btn-outline-secondary me-2 fw-bold">-</a>
-                                    <span class="fs-5">{{ item.quantity }}</span>
-                                    <a href="{{ path('app_cart_add', {'id': item.offre.id}) }}" class="btn btn-sm btn-outline-secondary ms-2 fw-bold">+</a>
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <form action="{{ path('app_cart_update_duree', {'id': item.id, 'action': 'decrease'}) }}" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary me-2 fw-bold" {% if item.dureeMois == 1 or item.dureeMois == 12 %}disabled{% endif %}>-</button>
+                                    </form>
+
+                                    <span class="badge bg-info text-dark fs-6" style="min-width: 80px;">
+                                        {% if item.dureeMois >= 12 %}
+                                            {{ item.dureeMois / 12 }} an(s)
+                                        {% else %}
+                                            {{ item.dureeMois }} mois
+                                        {% endif %}
+                                    </span>
+
+                                    <form action="{{ path('app_cart_update_duree', {'id': item.id, 'action': 'increase'}) }}" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary ms-2 fw-bold" {% if item.dureeMois == 9 %}disabled title="Passez à l'annuel"{% endif %}>+</button>
+                                    </form>
                                 </div>
                             </td>
-                            <td>{{ (item.price / 100)|number_format(2, ',', ' ') }} €</td>
-                            <td>{{ (sousTotal / 100)|number_format(2, ',', ' ') }} €</td>
+
+                            {# COLONNE QUANTITÉ (+ ET -) #}
                             <td>
-                                <a href="{{ path('app_cart_remove', {'id': item.id}) }}" class="btn btn-sm btn-outline-danger">
-                                    <i class="bi bi-trash"></i> Retirer
-                                </a>
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <form action="{{ path('app_cart_decrease', {'id': item.id}) }}" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary me-2 fw-bold">-</button>
+                                    </form>
+
+                                    <span class="fs-5" style="min-width: 30px;">{{ item.quantity }}</span>
+
+                                    <form action="{{ path('app_cart_add', {'id': item.offre.id}) }}" method="POST" class="d-inline">
+                                        {# IMPORTANT : On renvoie la même durée pour ajouter à la bonne ligne ! #}
+                                        <input type="hidden" name="quantite" value="1">
+                                        <input type="hidden" name="duree" value="{{ item.dureeMois }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary ms-2 fw-bold">+</button>
+                                    </form>
+                                </div>
+                            </td>
+
+                            <td>{{ (item.price / 100)|number_format(2, ',', ' ') }} €</td>
+
+                            <td class="fw-bold">{{ (sousTotal / 100)|number_format(2, ',', ' ') }} €</td>
+
+                            <td>
+                                <form action="{{ path('app_cart_remove', {'id': item.id}) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i> Retirer
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     {% endfor %}
@@ -56,7 +85,7 @@
                     <tfoot class="bg-light fw-bold">
                     <tr>
                         <td colspan="3" class="text-end">TOTAL À PAYER :</td>
-                        <td colspan="2" class="fs-4">{{ (totalPanier / 100)|number_format(2, ',', ' ') }} € <small class="text-muted fs-6">/ mois</small></td>
+                        <td colspan="2" class="fs-4 text-start">{{ (totalPanier / 100)|number_format(2, ',', ' ') }} €</td>
                     </tr>
                     </tfoot>
                 </table>

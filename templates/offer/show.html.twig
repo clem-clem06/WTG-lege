@@ -2,6 +2,11 @@
 
 {% block title %}{{ offre.nom }} - WorkTogether{% endblock %}
 
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('js/show.js') }}" defer></script>
+{% endblock %}
+
 {% block body %}
     <div class="container py-5 mb-5" id="offre-detail">
         <div class="row align-items-center mb-5">
@@ -20,11 +25,27 @@
                         <h3 class="fw-bold mb-4 text-center">Choisissez votre abonnement</h3>
 
                         {# Le formulaire qui pointe vers l'ajout au panier #}
-                        <form action="{{ path('app_cart_add', {'id': offre.id}) }}" method="POST">
+                        <form action="{{ path('app_cart_add', {'id': offre.id}) }}" method="POST" id="offer-form">
+
+                            {# LIGNE QUANTITÉ ET DURÉE #}
+                            <div class="row mb-4 text-center">
+                                <div class="col-6">
+                                    <label class="form-label fw-bold">Quantité :
+                                        <input type="number" name="quantite" class="form-control form-control-lg text-center" value="1" min="1" max="20">
+                                    </label>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-bold" id="label-duree">Durée :
+                                        <input type="number" id="input-duree-display" class="form-control form-control-lg text-center" value="1" min="1" max="9">
+                                    </label>
+                                    {# C'est ce champ caché qui est envoyé au serveur #}
+                                    <input type="hidden" name="duree" id="input-duree-hidden" value="1">
+                                </div>
+                            </div>
 
                             {# Option 1 : Mensuel #}
                             <label class="w-100 mb-3 cursor-pointer">
-                                <input type="radio" name="duree" value="1" class="btn-check" checked autocomplete="off">
+                                <input type="radio" name="modeFacturation" id="radio-mensuel" value="mensuel" class="btn-check" checked autocomplete="off">
                                 <div class="card border-primary border-2 h-100 option-card transition-all">
                                     <div class="card-body d-flex justify-content-between align-items-center">
                                         <div>
@@ -59,12 +80,6 @@
                                     </div>
                                 </div>
                             </label>
-
-                            <div class="mb-4">
-                                <label class="form-label fw-bold">Quantité souhaitée :
-                                    <input type="number" name="quantite" class="form-control form-control-lg" value="1" min="1" max="9">
-                                </label>
-                            </div>
 
                             <button type="submit" class="btn btn-primary btn-lg w-100 py-3 fw-bold fs-5">
                                 <i class="bi bi-cart-plus me-2"></i> Ajouter au panier

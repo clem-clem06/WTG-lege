@@ -20,7 +20,6 @@ final class CartController extends AbstractController
     public function index(CartRepository $cartRepository): Response
     {
         $user = $this->getUser();
-        // On cherche le panier de l'utilisateur
         $cart = $cartRepository->findOneBy(['user' => $user]);
 
         return $this->render('cart/index.html.twig', [
@@ -39,20 +38,28 @@ final class CartController extends AbstractController
             $em->persist($cart);
         }
 
-        // On récupère les valeurs du formulaire
+        $dureeChoisie = (int) $request->request->get('duree', 1);
         $quantiteChoisie = (int) $request->request->get('quantite', 1);
 
-        // Si tu as remplacé les boutons radio par un champ "nombre de mois", on le récupère ici :
-        $dureeChoisie = (int) $request->request->get('duree', 1);
+        // ==========================================
+        // 1. SÉCURITÉ PHP INFRANCHISSABLE
+        // ==========================================
+        if ($quantiteChoisie < 1) {
+            $this->addFlash('danger', 'Quantité invalide.');
+            return $this->redirectToRoute('app_offer_show', ['id' => $offre->getId()]);
+        }
+
+        // On interdit les mois farfelus comme 23 (soit 1 à 9, soit des multiples de 12)
+        if ($dureeChoisie < 1 || $dureeChoisie > 9) {
+            $this->addFlash('danger', 'Durée invalide. Au-delà de 9 mois, veuillez utiliser la facturation annuelle.');
+            return $this->redirectToRoute('app_offer_show', ['id' => $offre->getId()]);
+        }
 
         // ==========================================
-        // POINT 1 : SÉCURITÉ
+        // 2. RECHERCHE DE LA BONNE LIGNE (Même offre ET Même durée)
         // ==========================================
-
-
         $existingItem = null;
         foreach ($cart->getCartItems() as $item) {
-            // LE SECRET : On vérifie l'offre ET la durée pour ne pas les mélanger !
             if ($item->getOffre() === $offre && $item->getDureeMois() === $dureeChoisie) {
                 $existingItem = $item;
                 break;
@@ -62,13 +69,7 @@ final class CartController extends AbstractController
         if ($existingItem) {
             $existingItem->setQuantity($existingItem->getQuantity() + $quantiteChoisie);
         } else {
-            // Si le client prend plusieurs années (ex: 12, 24, 36), on peut lui appliquer la promo "2 mois offerts par an"
-            if ($dureeChoisie >= 12 && $dureeChoisie % 12 === 0) {
-                $annees = $dureeChoisie / 12;
-                $prixCalcule = $offre->getPrixMensuel() * 10 * $annees; // 10 mois payés au lieu de 12 par an
-            } else {
-                $prixCalcule = $offre->getPrixMensuel() * $dureeChoisie; // Prix classique
-            }
+            $prixCalcule = $offre->getPrixMensuel() * $dureeChoisie;
 
             $cartItem = new CartItem();
             $cartItem->setOffre($offre);
@@ -81,36 +82,83 @@ final class CartController extends AbstractController
         }
 
         $em->flush();
+        if ($quantiteChoisie === 1) {
+            $this->addFlash('success', '1 offre ajoutée pour ' . $dureeChoisie . ' mois !');
+        } else {
+            $this->addFlash('success', $quantiteChoisie . ' offre(s) ajoutée(s) pour ' . $dureeChoisie . ' mois !');
+        }
 
-        $this->addFlash('success', 'Offre ajoutée à votre panier pour ' . $dureeChoisie . ' mois !');
+        // Si on a cliqué sur le bouton + depuis le panier, on reste sur le panier
+        if ($request->headers->get('referer') && str_contains($request->headers->get('referer'), '/cart')) {
+            return $this->redirectToRoute('app_cart');
+        }
+
+        // Sinon, on reste sur la page de l'offre
         return $this->redirectToRoute('app_offer_show', ['id' => $offre->getId()]);
     }
 
-    #[Route('/cart/remove/{id}', name: 'app_cart_remove')]
+    #[Route('/cart/remove/{id}', name: 'app_cart_remove', methods: ['POST'])]
     public function remove(CartItem $cartItem, EntityManagerInterface $em): Response
     {
-        // Sécurité : On vérifie que la ligne appartient bien au panier de l'utilisateur connecté !
         if ($cartItem->getCart()->getUser() === $this->getUser()) {
             $em->remove($cartItem);
             $em->flush();
             $this->addFlash('success', 'Offre retirée du panier.');
         }
-
         return $this->redirectToRoute('app_cart');
     }
 
-    #[Route('/cart/decrease/{id}', name: 'app_cart_decrease')]
+    #[Route('/cart/decrease/{id}', name: 'app_cart_decrease', methods: ['POST'])]
     public function decrease(CartItem $cartItem, EntityManagerInterface $em): Response
     {
-        // On vérifie que le CartItem appartient bien au panier de l'utilisateur
         if ($cartItem->getCart()->getUser() === $this->getUser()) {
             if ($cartItem->getQuantity() > 1) {
-                // Si > 1, on retire 1
                 $cartItem->setQuantity($cartItem->getQuantity() - 1);
             } else {
-                // Si = 1, on supprime la ligne complètement
                 $em->remove($cartItem);
                 $this->addFlash('success', 'Offre retirée du panier.');
+            }
+            $em->flush();
+        }
+        return $this->redirectToRoute('app_cart');
+    }
+
+    // ==========================================
+    // 3. MODIFIER LA DURÉE DEPUIS LE PANIER
+    // ==========================================
+    #[Route('/cart/duree/{id}/{action}', name: 'app_cart_update_duree', methods: ['POST'])]
+    public function updateDuree(CartItem $cartItem, string $action, EntityManagerInterface $em): Response
+    {
+        if ($cartItem->getCart()->getUser() !== $this->getUser()) {
+            return $this->redirectToRoute('app_cart');
+        }
+
+        $currentDuree = $cartItem->getDureeMois();
+        $isAnnuel = ($currentDuree >= 12 && $currentDuree % 12 === 0);
+        $step = $isAnnuel ? 12 : 1; // On ajoute par année ou par mois
+
+        if ($action === 'increase') {
+            $newDuree = $currentDuree + $step;
+            if (!$isAnnuel && $newDuree > 9) {
+                $this->addFlash('warning', 'Passez sur une offre annuelle.');
+                $newDuree = 9;
+            }
+        } else {
+            $newDuree = $currentDuree - $step;
+            if ($isAnnuel && $newDuree < 12) {
+                $this->addFlash('warning', 'La durée annuelle minimum est de 1 an.');
+                $newDuree = 12;
+            }
+        }
+
+        if ($newDuree >= 1) {
+            $cartItem->setDureeMois($newDuree);
+            // Recalcul du prix
+            $offre = $cartItem->getOffre();
+            if ($newDuree >= 12 && $newDuree % 12 === 0) {
+                $cartItem->setPrice($offre->getPrixMensuel() * 10 * ($newDuree / 12));
+            } else {
+                $cartItem->setPrice($offre->getPrixMensuel() * $newDuree);
             }
             $em->flush();
         }
