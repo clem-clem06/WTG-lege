@@ -1,19 +1,55 @@
 <?php
+
 namespace App\Service;
 
 use App\Entity\Cart;
 use App\Entity\CartItem;
 use App\Entity\Offre;
+use App\Entity\User;
+use App\Repository\CartRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use InvalidArgumentException;
+use Symfony\Bundle\SecurityBundle\Security;
 
-readonly class CartService
+Readonly class CartService
 {
-    public function __construct(private EntityManagerInterface $em) {
+    public function __construct(private EntityManagerInterface $em, private CartRepository $cartRepository, private Security $security)
+    {
 
     }
 
-    public function addToCart(Cart $cart, Offre $offre, int $quantiteChoisie, int $dureeChoisie): void
+    /**
+     * Petite fonction interne pour récupérer l'utilisateur facilement
+     */
+    private function getUser(): User
     {
+        /** @var User $user */
+        $user = $this->security->getUser();
+        return $user;
+    }
+
+    public function getOrCreateCart(): Cart
+    {
+        $user = $this->getUser();
+
+        $cart = $this->cartRepository->findOneBy(['user' => $user]);
+        if (!$cart) {
+            $cart = new Cart();
+            $cart->setUser($user);
+            $this->em->persist($cart);
+            $this->em->flush();
+        }
+        return $cart;
+    }
+
+    public function addToCart(Offre $offre, int $quantiteChoisie, int $dureeChoisie): void
+    {
+        if ($quantiteChoisie < 1 || $dureeChoisie < 1 || $dureeChoisie > 60 || ($dureeChoisie > 9 && $dureeChoisie % 12 !== 0)) {
+            throw new InvalidArgumentException('Données saisies invalides.');
+        }
+
+        $cart = $this->getOrCreateCart();
+
         $existingItem = null;
         foreach ($cart->getCartItems() as $item) {
             if ($item->getOffre() === $offre && $item->getDureeMois() === $dureeChoisie) {
@@ -25,11 +61,9 @@ readonly class CartService
         if ($existingItem) {
             $existingItem->setQuantity($existingItem->getQuantity() + $quantiteChoisie);
         } else {
-            if ($dureeChoisie >= 12 && $dureeChoisie % 12 === 0) {
-                $prixCalcule = $offre->getPrixMensuel() * 10 * ($dureeChoisie / 12);
-            } else {
-                $prixCalcule = $offre->getPrixMensuel() * $dureeChoisie;
-            }
+            $prixCalcule = ($dureeChoisie >= 12 && $dureeChoisie % 12 === 0)
+                ? $offre->getPrixMensuel() * 10 * ($dureeChoisie / 12)
+                : $offre->getPrixMensuel() * $dureeChoisie;
 
             $cartItem = new CartItem();
             $cartItem->setOffre($offre);
@@ -44,8 +78,32 @@ readonly class CartService
         $this->em->flush();
     }
 
+    public function remove(CartItem $cartItem): void
+    {
+        if ($cartItem->getCart()->getUser() === $this->getUser()) {
+            $this->em->remove($cartItem);
+            $this->em->flush();
+        }
+    }
+
+    public function decrease(CartItem $cartItem): void
+    {
+        if ($cartItem->getCart()->getUser() === $this->getUser()) {
+            if ($cartItem->getQuantity() > 1) {
+                $cartItem->setQuantity($cartItem->getQuantity() - 1);
+            } else {
+                $this->em->remove($cartItem);
+            }
+            $this->em->flush();
+        }
+    }
+
     public function updateDuree(CartItem $cartItem, string $action): ?string
     {
+        if ($cartItem->getCart()->getUser() !== $this->getUser()) {
+            return null;
+        }
+
         $currentDuree = $cartItem->getDureeMois();
         $isAnnuel = ($currentDuree >= 12 && $currentDuree % 12 === 0);
         $step = $isAnnuel ? 12 : 1;
@@ -71,14 +129,14 @@ readonly class CartService
         if ($newDuree >= 1) {
             $cartItem->setDureeMois($newDuree);
             $offre = $cartItem->getOffre();
-            if ($newDuree >= 12 && $newDuree % 12 === 0) {
-                $cartItem->setPrice($offre->getPrixMensuel() * 10 * ($newDuree / 12));
-            } else {
-                $cartItem->setPrice($offre->getPrixMensuel() * $newDuree);
-            }
+            $cartItem->setPrice(
+                ($newDuree >= 12 && $newDuree % 12 === 0)
+                    ? $offre->getPrixMensuel() * 10 * ($newDuree / 12)
+                    : $offre->getPrixMensuel() * $newDuree
+            );
             $this->em->flush();
         }
 
-        return $warning; // Renvoie l'avertissement
+        return $warning;
     }
 }
