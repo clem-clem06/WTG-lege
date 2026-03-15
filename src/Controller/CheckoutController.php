@@ -8,6 +8,7 @@ use App\Repository\CartRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use DomainException;
 use InvalidArgumentException;
+use RuntimeException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -70,7 +71,7 @@ final class CheckoutController extends AbstractController
             $this->addFlash('danger', $e->getMessage());
             return $this->redirectToRoute('app_checkout');
 
-        } catch (DomainException $e) {
+        } catch (RuntimeException $e) {
             // 2. ERREUR DE STOCK (Notre \DomainException) -> MESSAGE SAFE
             $this->addFlash('danger', $e->getMessage());
             return $this->redirectToRoute('app_cart');

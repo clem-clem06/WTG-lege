@@ -13,7 +13,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 readonly class PaymentService
 {
-    public function __construct(private EntityManagerInterface $em, private ValidatorInterface$validator) {
+    public function __construct(private EntityManagerInterface $em, private ValidatorInterface $validator) {
 
     }
 

@@ -11,7 +11,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Symfony\Bundle\SecurityBundle\Security;
 
-Readonly class CartService
+readonly class CartService
 {
     public function __construct(private EntityManagerInterface $em, private CartRepository $cartRepository, private Security $security)
     {
