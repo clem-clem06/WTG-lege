@@ -9,8 +9,9 @@ use App\Entity\Payment;
 use App\Repository\CartRepository;
 use App\Repository\UniteRepository;
 use DateMalformedStringException;
-use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Random\RandomException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -44,7 +45,7 @@ Final class CheckoutController extends AbstractController
      * @throws DateMalformedStringException
      */
     #[Route('/checkout/process', name: 'app_checkout_process', methods: ['POST'])]
-    public function process(Request $request, CartRepository $cartRepository, UniteRepository $uniteRepository, EntityManagerInterface $em): Response
+    public function process(Request $request, CartRepository $cartRepository, UniteRepository $uniteRepository, EntityManagerInterface $em, ValidatorInterface $validator): Response
     {
         $user = $this->getUser();
         $cart = $cartRepository->findOneBy(['user' => $user]);
@@ -64,35 +65,66 @@ Final class CheckoutController extends AbstractController
                 $fakeBankToken = $card->getToken();
             }
         } else {
-            $cardNumber = $request->request->get('cardNumber');
-            $expDate = $request->request->get('expDate');
+            // On force en string pour éviter les erreurs si c'est null
+            $cardNumber = (string) $request->request->get('cardNumber', '');
+            $expDate = (string) $request->request->get('expDate', '');
             $saveCard = $request->request->get('saveCard');
 
-            if ($cardNumber && $expDate) {
-                $cleanCardNumber = str_replace(' ', '', $cardNumber);
-                $last4 = substr($cleanCardNumber, -4);
+            $cleanCardNumber = str_replace(' ', '', $cardNumber);
+            $cleanExpDate = str_replace(' ', '', $expDate);
 
-                $cleanExpDate = str_replace(' ', '', $expDate);
-                if (str_contains($cleanExpDate, '/')) {
-                    $dateParts = explode('/', $cleanExpDate);
-                    $expMonth = (int) $dateParts[0];
-                    $expYear = (int) $dateParts[1];
-                } else {
-                    $expMonth = (int) substr($cleanExpDate, 0, 2);
-                    $expYear = (int) substr($cleanExpDate, 2, 2);
-                }
+            // ==========================================
+            // 1. VALIDATION STRICTE
+            // ==========================================
+            $constraints = new Assert\Collection([
+                'cardNumber' => [
+                    new Assert\NotBlank(message: 'Le numéro de carte est obligatoire.'),
+                    new Assert\Length(min: 14, max: 19, minMessage: 'Numéro de carte trop court.')
+                ],
+                'expDate' => new Assert\Regex(
+                    pattern: '/^(0[1-9]|1[0-2])\/?([0-9]{2})$/',
+                    message: 'Format de date d\'expiration invalide (MM/AA ou MMAA).'
+                )
+            ]);
 
-                $fakeBankToken = 'tok_simul_' . bin2hex(random_bytes(8));
+            $violations = $validator->validate([
+                'cardNumber' => $cleanCardNumber,
+                'expDate' => $cleanExpDate
+            ], $constraints);
 
-                if ($saveCard === "1") {
-                    $card = new Card();
-                    $card->setUser($user);
-                    $card->setLast4($last4);
-                    $card->setExpMonth($expMonth);
-                    $card->setExpYear($expYear);
-                    $card->setToken($fakeBankToken);
-                    $em->persist($card);
-                }
+            // Si le vigile trouve une anomalie, on le renvoie à l'accueil avec une gifle (flash)
+            if (count($violations) > 0) {
+                // On affiche le premier message d'erreur trouvé
+                $this->addFlash('danger', $violations[0]->getMessage());
+                return $this->redirectToRoute('app_checkout');
+            }
+
+            // ==========================================
+            // 2. TRAITEMENT SÉCURISÉ
+            // ==========================================
+            $last4 = substr($cleanCardNumber, -4);
+
+            // Grâce au Validator Regex juste au-dessus, on est 100% certains du format.
+            // Ça ne peut plus jamais exploser ici !
+            if (str_contains($cleanExpDate, '/')) {
+                $dateParts = explode('/', $cleanExpDate);
+                $expMonth = (int) $dateParts[0];
+                $expYear = (int) $dateParts[1];
+            } else {
+                $expMonth = (int) substr($cleanExpDate, 0, 2);
+                $expYear = (int) substr($cleanExpDate, 2, 2);
+            }
+
+            $fakeBankToken = 'tok_simul_' . bin2hex(random_bytes(8));
+
+            if ($saveCard === "1") {
+                $card = new Card();
+                $card->setUser($user);
+                $card->setLast4($last4);
+                $card->setExpMonth($expMonth);
+                $card->setExpYear($expYear);
+                $card->setToken($fakeBankToken);
+                $em->persist($card);
             }
         }
 
@@ -168,7 +200,7 @@ Final class CheckoutController extends AbstractController
         }
         $em->flush();
 
-        $this->addFlash('success', 'Paiement simulé réussi ! Vos unités ont été attribuées.');
-        return $this->redirectToRoute('app_home'); // On pourra rediriger vers l'espace client plus tard !
+        $this->addFlash('success', 'Paiement réussi ! Vos unités ont été attribuées.');
+        return $this->redirectToRoute('app_home'); //TODO: On pourra rediriger vers l'espace client plus tard !
     }
 }
