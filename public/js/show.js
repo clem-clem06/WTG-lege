@@ -1,4 +1,5 @@
-document.addEventListener('turbo:load', function() {
+(function() {
+    function initOfferForm() {
     const form = document.getElementById('offer-form');
     if (!form) return;
 
@@ -82,4 +83,7 @@ document.addEventListener('turbo:load', function() {
 
     // Initialisation au chargement de la page
     updateMode();
+    }
+    initOfferForm();
+    document.addEventListener('turbo:load', initOfferForm);
 });
