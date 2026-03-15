@@ -16,12 +16,14 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Service\CheckoutService;
 use App\Service\PaymentService;
 use Throwable;
+use Psr\Log\LoggerInterface;
+use App\Repository\CardRepository;
 
 #[IsGranted('ROLE_USER')]
 final class CheckoutController extends AbstractController
 {
     #[Route('/checkout', name: 'app_checkout')]
-    public function index(CartRepository $cartRepository, EntityManagerInterface $em): Response
+    public function index(CartRepository $cartRepository, CardRepository $cardRepository): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -32,7 +34,7 @@ final class CheckoutController extends AbstractController
             return $this->redirectToRoute('app_cart');
         }
 
-        $savedCards = $em->getRepository(Card::class)->findBy(['user' => $user], ['id' => 'DESC']);
+        $savedCards = $cardRepository->findBy(['user' => $user], ['id' => 'DESC']);
 
         return $this->render('checkout/index.html.twig', [
             'cart' => $cart,
@@ -41,7 +43,7 @@ final class CheckoutController extends AbstractController
     }
 
     #[Route('/checkout/process', name: 'app_checkout_process', methods: ['POST'])]
-    public function process(Request $request, CartRepository $cartRepository, PaymentService $paymentService, CheckoutService $checkoutService, $logger): Response
+    public function process(Request $request, CartRepository $cartRepository, PaymentService $paymentService, CheckoutService $checkoutService, LoggerInterface $logger): Response
     {
 
         /** @var User $user */
