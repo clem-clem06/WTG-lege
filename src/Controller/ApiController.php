@@ -18,7 +18,7 @@ final class ApiController extends AbstractController
     #[Route('/unites', name: 'unites_list', methods: ['GET'])]
     public function getUnites(UniteRepository $uniteRepository): JsonResponse
     {
-        $unites = $uniteRepository->findAll();
+        $unites = $uniteRepository->findAllWithBaieAndLocataire();
 
         $data = [];
         foreach ($unites as $unite) {
@@ -35,7 +35,7 @@ final class ApiController extends AbstractController
                 'id' => $unite->getId(),
                 'numero' => $unite->getNumero(),
                 'etat' => $unite->getEtat(),
-                'disponible' => !$estLouee, // Si elle n'est pas louée, elle est dispo
+                'disponible' => !$estLouee,
                 'locataire_id' => $estLouee ? $unite->getLocataire()->getId() : null,
                 'date_fin_location' => $unite->getDateFinLocation()?->format('Y-m-d H:i:s'),
                 'baie_id' => $unite->getBaie()?->getId(),
@@ -53,11 +53,11 @@ final class ApiController extends AbstractController
     #[Route('/interventions', name: 'interventions_list', methods: ['GET'])]
     public function getInterventions(InterventionRepository $interventionRepository): JsonResponse
     {
-        $interventions = $interventionRepository->findAll();
+        $interventions = $interventionRepository->findAllWithUnites();
 
         $data = [];
         foreach ($interventions as $intervention) {
-            // On récupère les IDs des unités touchées par cette intervention
+
             $unitesAffectees = [];
             foreach ($intervention->getUnites() as $unite) {
                 $unitesAffectees[] = $unite->getId();
@@ -65,7 +65,7 @@ final class ApiController extends AbstractController
 
             $data[] = [
                 'id' => $intervention->getId(),
-                'type' => $intervention->getType(), // "incident" ou "maintenance"
+                'type' => $intervention->getType(),
                 'description' => $intervention->getDescription(),
                 'dateDebut' => $intervention->getDateDebut()?->format('Y-m-d H:i:s'),
                 'dateFin' => $intervention->getDateFin()?->format('Y-m-d H:i:s'),

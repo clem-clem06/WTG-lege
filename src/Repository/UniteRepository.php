@@ -40,4 +40,18 @@ class UniteRepository extends ServiceEntityRepository
     //            ->getOneOrNullResult()
     //        ;
     //    }
+
+    /**
+     * Récupère toutes les unités avec leurs baies et locataires en UNE SEULE requête.
+     */
+    public function findAllWithBaieAndLocataire(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->leftJoin('u.baie', 'b')
+            ->addSelect('b')
+            ->leftJoin('u.locataire', 'l')
+            ->addSelect('l')
+            ->getQuery()
+            ->getResult();
+    }
 }
