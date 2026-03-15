@@ -1,2 +1,14 @@
 GET http://127.0.0.1:8000/api/unites
+#GET http://127.0.0.1:8000/api/interventions
 Authorization: Bearer WTG-SECRET-KEY-2026
+
+#### Déclarer une nouvelle panne (POST)
+#POST http://127.0.0.1:8000/api/interventions
+#Authorization: Bearer WTG-SECRET-KEY-2026
+#Content-Type: application/json
+#
+#{
+#    "type": "incident",
+#    "description": "Coupure électrique détectée sur la rangée A. Redémarrage manuel nécessaire.",
+#    "unites_ids": [1, 2]
+#}
