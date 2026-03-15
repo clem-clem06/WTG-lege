@@ -69,7 +69,12 @@ final class CartController extends AbstractController
         if ($existingItem) {
             $existingItem->setQuantity($existingItem->getQuantity() + $quantiteChoisie);
         } else {
-            $prixCalcule = $offre->getPrixMensuel() * $dureeChoisie;
+            // On vérifie si c'est un abonnement annuel pour appliquer la promotion
+            if ($dureeChoisie >= 12 && $dureeChoisie % 12 === 0) {
+                $prixCalcule = $offre->getPrixMensuel() * 10 * ($dureeChoisie / 12);
+            } else {
+                $prixCalcule = $offre->getPrixMensuel() * $dureeChoisie;
+            }
 
             $cartItem = new CartItem();
             $cartItem->setOffre($offre);
